@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.MvcUriComponentsBuilder;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 import java.io.IOException;
 import java.util.stream.Collectors;
@@ -68,6 +69,11 @@ public class FileUploadController {
         return ResponseEntity.notFound().build();
     }
 
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public String handleMaxSizeException(MaxUploadSizeExceededException exc, RedirectAttributes redirectAttributes) {
+        redirectAttributes.addFlashAttribute("message", "Dosya boyutu cok buyuk. Limit: 10MB");
+        return "redirect:/";
+    }
 
 
 }

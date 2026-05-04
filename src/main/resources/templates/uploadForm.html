@@ -1,30 +1,347 @@
 <!DOCTYPE html>
-<html xmlns:th="https://www.thymeleaf.org">
+<html xmlns:th="https://www.thymeleaf.org" lang="tr">
+<head>
+    <meta charset="UTF-8"/>
+    <title>File Upload</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com"/>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter+Tight:wght@400;500;600&display=swap" rel="stylesheet"/>
+    <style>
+        :root {
+            --bg: #0d0f12;
+            --panel: #15181d;
+            --panel-2: #1c2027;
+            --border: #262b33;
+            --text: #e6e8eb;
+            --muted: #8b929c;
+            --accent: #7cffb3;
+            --accent-dim: #4ad991;
+            --mono: 'JetBrains Mono', monospace;
+            --sans: 'Inter Tight', sans-serif;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: var(--sans);
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            background-image:
+                    linear-gradient(var(--border) 1px, transparent 1px),
+                    linear-gradient(90deg, var(--border) 1px, transparent 1px);
+            background-size: 48px 48px;
+            background-position: -1px -1px;
+            display: flex;
+            justify-content: center;
+            padding: 64px 24px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 720px;
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 8px;
+            font-family: var(--mono);
+            font-size: 13px;
+            color: var(--muted);
+            /* Lokal Turkce capital-i bug'ini engelle */
+            text-transform: none;
+            letter-spacing: 0.12em;
+        }
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--accent);
+            border-radius: 50%;
+            box-shadow: 0 0 12px var(--accent);
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        h1 {
+            font-family: var(--mono);
+            font-size: 42px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            margin-bottom: 8px;
+        }
+        h1 .accent { color: var(--accent); }
+
+        .subtitle {
+            color: var(--muted);
+            font-size: 15px;
+            margin-bottom: 40px;
+        }
+
+        .flash {
+            background: linear-gradient(90deg, rgba(124, 255, 179, 0.08), transparent);
+            border: 1px solid rgba(124, 255, 179, 0.25);
+            border-left: 3px solid var(--accent);
+            padding: 16px 20px;
+            margin-bottom: 24px;
+            font-family: var(--mono);
+            font-size: 13px;
+            color: var(--accent-dim);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            animation: slideIn 0.4s ease-out;
+            word-break: break-word;
+        }
+        .flash::before {
+            content: "[OK]";
+            font-weight: 700;
+            color: var(--accent);
+            flex-shrink: 0;
+        }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(-8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .panel {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 32px;
+            margin-bottom: 24px;
+        }
+        .panel-title {
+            font-family: var(--mono);
+            font-size: 12px;
+            color: var(--muted);
+            /* Turkce locale'da i->Ä° donusumunu engelle */
+            text-transform: none;
+            letter-spacing: 0.15em;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .panel-title::before {
+            content: "//";
+            color: var(--accent);
+        }
+
+        /* Drop zone: input gizli, label tum alani kaplar */
+        .drop-zone {
+            display: block;
+            border: 2px dashed var(--border);
+            border-radius: 8px;
+            padding: 40px 24px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: var(--panel-2);
+        }
+        .drop-zone:hover {
+            border-color: var(--accent);
+            background: rgba(124, 255, 179, 0.03);
+        }
+        .drop-zone.has-file {
+            border-color: var(--accent);
+            border-style: solid;
+        }
+        /* Native file input'u tamamen gizle, layout'a sizmasin */
+        .drop-zone input[type="file"] {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+        .drop-icon {
+            font-family: var(--mono);
+            font-size: 32px;
+            color: var(--accent);
+            margin-bottom: 12px;
+            line-height: 1;
+        }
+        .drop-text {
+            font-size: 15px;
+            margin-bottom: 4px;
+        }
+        .drop-hint {
+            font-family: var(--mono);
+            font-size: 12px;
+            color: var(--muted);
+        }
+        .file-name {
+            font-family: var(--mono);
+            font-size: 13px;
+            color: var(--accent);
+            margin-top: 12px;
+            word-break: break-all;
+        }
+
+        .submit-btn {
+            margin-top: 20px;
+            width: 100%;
+            padding: 14px 24px;
+            background: var(--accent);
+            color: var(--bg);
+            border: none;
+            border-radius: 8px;
+            font-family: var(--mono);
+            font-size: 14px;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            text-transform: none;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        .submit-btn:hover {
+            background: var(--accent-dim);
+            transform: translateY(-1px);
+            box-shadow: 0 8px 24px rgba(124, 255, 179, 0.2);
+        }
+        .submit-btn:active {
+            transform: translateY(0);
+        }
+
+        .file-list {
+            list-style: none;
+        }
+        .file-list li {
+            border-bottom: 1px solid var(--border);
+            transition: background 0.15s ease;
+        }
+        .file-list li:last-child {
+            border-bottom: none;
+        }
+        .file-list li:hover {
+            background: var(--panel-2);
+        }
+        .file-list a {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 16px;
+            color: var(--text);
+            text-decoration: none;
+            font-family: var(--mono);
+            font-size: 13px;
+            word-break: break-all;
+        }
+        .file-list a::before {
+            content: ">";
+            color: var(--accent);
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+        .file-list a:hover {
+            color: var(--accent);
+        }
+
+        .empty {
+            padding: 24px;
+            text-align: center;
+            color: var(--muted);
+            font-family: var(--mono);
+            font-size: 13px;
+        }
+
+        .footer {
+            margin-top: 32px;
+            text-align: center;
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--muted);
+            letter-spacing: 0.1em;
+        }
+    </style>
+</head>
 <body>
 
-<!-- Flash mesaji (basarili upload sonrasi gosterilir) -->
-<div th:if="${message}">
-    <h2 th:text="${message}"/>
+<div class="container">
+
+    <div class="header">
+        <span class="status-dot"></span>
+        <span>spring boot &middot; ready</span>
+    </div>
+
+    <h1>file<span class="accent">.upload</span>()</h1>
+    <p class="subtitle">Multipart dosya yukleme servisi. Drag &amp; drop ya da tikla, sec.</p>
+
+    <div class="flash" th:if="${message}" th:text="${message}"></div>
+
+    <div class="panel">
+        <div class="panel-title">upload</div>
+        <form method="POST" enctype="multipart/form-data" action="/">
+            <label class="drop-zone" id="dropZone" for="fileInput">
+                <div class="drop-icon">[ + ]</div>
+                <div class="drop-text">Dosyayi buraya birak</div>
+                <div class="drop-hint">veya tiklayarak sec</div>
+                <div class="file-name" id="fileName"></div>
+                <input type="file" name="file" id="fileInput"/>
+            </label>
+            <button type="submit" class="submit-btn">Upload</button>
+        </form>
+    </div>
+
+    <div class="panel">
+        <div class="panel-title">stored files</div>
+        <ul class="file-list" th:if="${not #lists.isEmpty(files)}">
+            <li th:each="file : ${files}">
+                <a th:href="${file}" th:text="${file}"></a>
+            </li>
+        </ul>
+        <div class="empty" th:if="${#lists.isEmpty(files)}">// henuz dosya yok</div>
+    </div>
+
+    <div class="footer">[ localhost &middot; multipart/form-data ]</div>
+
 </div>
 
-<!-- Multipart form: enctype zorunlu, action POST / -->
-<div>
-    <form method="POST" enctype="multipart/form-data" action="/">
-        <table>
-            <tr><td>File to upload:</td><td><input type="file" name="file"/></td></tr>
-            <tr><td></td><td><input type="submit" value="Upload"/></td></tr>
-        </table>
-    </form>
-</div>
+<script>
+    const input = document.getElementById('fileInput');
+    const zone = document.getElementById('dropZone');
+    const nameEl = document.getElementById('fileName');
 
-<!-- Yuklenmis dosyalarin link listesi -->
-<div>
-    <ul>
-        <li th:each="file : ${files}">
-            <a th:href="${file}" th:text="${file}"/>
-        </li>
-    </ul>
-</div>
+    // Secilen dosya adini drop zone icinde goster
+    input.addEventListener('change', () => {
+        if (input.files && input.files.length > 0) {
+            nameEl.textContent = input.files[0].name;
+            zone.classList.add('has-file');
+        } else {
+            nameEl.textContent = '';
+            zone.classList.remove('has-file');
+        }
+    });
+
+    // Native HTML5 drag & drop
+    ['dragenter', 'dragover'].forEach(ev =>
+        zone.addEventListener(ev, e => {
+            e.preventDefault();
+            zone.classList.add('has-file');
+        })
+    );
+    ['dragleave', 'drop'].forEach(ev =>
+        zone.addEventListener(ev, e => {
+            e.preventDefault();
+            if (ev === 'drop' && e.dataTransfer.files.length > 0) {
+                input.files = e.dataTransfer.files;
+                nameEl.textContent = e.dataTransfer.files[0].name;
+                zone.classList.add('has-file');
+            } else if (ev === 'dragleave' && !input.files.length) {
+                zone.classList.remove('has-file');
+            }
+        })
+    );
+</script>
 
 </body>
 </html>
